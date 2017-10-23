@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class CameraSmooth : MonoBehaviour {
 
+	private const float MAX_DISTANCE = 40f;
+	private const float MIN_DISTANCE = 5f;
+
 	public Transform target;
 	public Transform cam;
 
@@ -15,7 +18,7 @@ public class CameraSmooth : MonoBehaviour {
 	private float minDistanceGround = 5f;
 
 	private float scrollWheel = 0f;
-	private float scrollSensibility = 5f;
+	private float scrollSensibility = 10f;
 
 	private float mouseX = 0f;
 	private float mouseXSensibility = 2f;
@@ -23,13 +26,15 @@ public class CameraSmooth : MonoBehaviour {
 	private bool autoControl = false;
 
 	private RaycastHit hitGround;
+	private RaycastHit hitObstacle;
+
+	public float approach = 0f;
 
 	void Start () {
 	}
 	
 
 	void Update () {
-
 		//Recupera valor do scroll
 		scrollWheel = Input.GetAxis ("Mouse ScrollWheel");
 		//Recupera valor de arrastar o mouse
@@ -41,16 +46,15 @@ public class CameraSmooth : MonoBehaviour {
 		} else {
 			autoControl = false;
 		}
-
 	}
 
 	void FixedUpdate () {
-		float tLerp = 0.01f;
+		float tLerp = 0.02f;
 		//Atualiza posição do Objeto
 		transform.position = target.position + Vector3.up * hightAbove;
 		if (!autoControl) {
 			transform.rotation = Quaternion.Euler (0, target.eulerAngles.y, 0);
-			tLerp = 0.01f;
+			tLerp = 0.02f;
 		} else {
 			transform.rotation = Quaternion.Euler (0, transform.eulerAngles.y + mouseX*mouseXSensibility, 0);
 			tLerp = 0.05f;
@@ -61,10 +65,25 @@ public class CameraSmooth : MonoBehaviour {
 			hightGround = 5f - hitGround.distance;
 		}
 
+		if (Physics.Raycast (cam.position - cam.forward * 2, target.position - cam.position, out hitObstacle)) {
+
+			Debug.DrawLine (cam.position - cam.forward * 2, hitObstacle.point );
+
+			if (hitObstacle.collider.tag.Equals ("Tree")) {
+				approach++;
+			} else if (Physics.Raycast (target.position + target.up * 2f, cam.position - target.position, out hitObstacle)) {
+				if (!hitObstacle.collider.tag.Equals ("Tree")) {
+					approach--;
+					approach = Mathf.Max (approach, 0);
+				}
+				Debug.DrawLine (target.position + target.up * 2f, hitObstacle.point );
+			}
+		}
+
 		//Atualiza posição da camera
 		cam.position = Vector3.Lerp (cam.position, 
-			-(transform.forward * Mathf.Cos (angle * Mathf.Deg2Rad) * distance)
-			+ (transform.up * ((Mathf.Sin (angle * Mathf.Deg2Rad) * distance) + hightGround))
+			-(transform.forward * Mathf.Cos (angle * Mathf.Deg2Rad) * Mathf.Max(distance - approach, MIN_DISTANCE))
+			+ (transform.up * ((Mathf.Sin (angle * Mathf.Deg2Rad) * Mathf.Max(distance - approach, MIN_DISTANCE)) + hightGround))
 			+ transform.position,
 			tLerp);
 		cam.LookAt (transform);
@@ -73,7 +92,7 @@ public class CameraSmooth : MonoBehaviour {
 	void LateUpdate(){
 		//Atualiza a distancia da camera
 		float scroll = distance - scrollWheel * scrollSensibility;
-		distance = Mathf.Clamp (scroll, 10, 40);
+		distance = Mathf.Clamp (scroll, MIN_DISTANCE, MAX_DISTANCE);
 		angle = distance / 2;
 	}
 }
