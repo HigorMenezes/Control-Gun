@@ -49,6 +49,8 @@ public class CameraSmooth : MonoBehaviour {
 	}
 
 	void FixedUpdate () {
+		RaycastHit hitGround;
+		RaycastHit hitObstacle;
 		float tLerp = 0.02f;
 		//Atualiza posição do Objeto
 		transform.position = target.position + Vector3.up * hightAbove;
@@ -65,18 +67,21 @@ public class CameraSmooth : MonoBehaviour {
 			hightGround = 5f - hitGround.distance;
 		}
 
-		if (Physics.Raycast (cam.position - cam.forward * 2, target.position - cam.position, out hitObstacle)) {
-
-			Debug.DrawLine (cam.position - cam.forward * 2, hitObstacle.point );
-
-			if (hitObstacle.collider.tag.Equals ("Tree")) {
+		//Verifica colisão com as paredes
+		if (Physics.Raycast (cam.position - cam.forward * 2, target.position - cam.position, out hitObstacle, distance)) {
+			if (hitObstacle.collider.tag.Equals ("Tree")
+			    || hitObstacle.collider.tag.Equals ("Wall")) {
 				approach++;
-			} else if (Physics.Raycast (target.position + target.up * 2f, cam.position - target.position, out hitObstacle)) {
-				if (!hitObstacle.collider.tag.Equals ("Tree")) {
+				approach = Mathf.Min (approach, MAX_DISTANCE);
+			} else if (Physics.Raycast (target.position + target.up * 2f, cam.position - target.position, out hitObstacle, distance)) {
+				if (!hitObstacle.collider.tag.Equals ("Tree")
+					&& !hitObstacle.collider.tag.Equals ("Wall")) {
 					approach--;
 					approach = Mathf.Max (approach, 0);
 				}
-				Debug.DrawLine (target.position + target.up * 2f, hitObstacle.point );
+			} else {
+				approach--;
+				approach = Mathf.Max (approach, 0);
 			}
 		}
 
