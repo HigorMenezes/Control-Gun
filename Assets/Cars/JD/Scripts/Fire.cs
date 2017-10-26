@@ -52,6 +52,7 @@ public class Fire : MonoBehaviour {
 			activePrepare (false);
 		}
 	}
+		
 
 	void FixedUpdate () {
 		if ( charge ) {
@@ -75,6 +76,8 @@ public class Fire : MonoBehaviour {
 		charge = false;
 		activePrepare (false);
 		particleDisponse = Instantiate (shot, cannon.transform);
+
+		particleDisponse.transform.SetParent (null);
 
 		Rigidbody rb = particleDisponse.GetComponent<Rigidbody> ();
 		rb.AddForce(cannon.transform.forward * power, ForceMode.Impulse);
